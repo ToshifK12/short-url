@@ -5,30 +5,28 @@ consistent hashing, and Redis. Designed so the cache/storage tier and the
 app tier can each scale out independently, without a central bottleneck.
 
 ## Architecture
+                    ┌─────────────┐
+    clients ──────► │    nginx    │  (round-robin / least-conn LB)
+                    └──────┬──────┘
+               ┌───────────┴───────────┐
+               ▼                       ▼
+         ┌───────────┐           ┌───────────┐
+         │  app-1     │           │  app-2     │   ...  app-N
+         │ (node id 1)│           │ (node id 2)│
+         └─────┬──────┘           └─────┬──────┘
+               │                        │
+               └───────────┬────────────┘
+                            ▼
+                consistent hash ring
+                (150 virtual nodes / shard)
+                            │
+          ┌─────────────────┼─────────────────┐
+          ▼                 ▼                 ▼
+    ┌───────────┐    ┌───────────┐     ┌───────────┐
+    │ redis-1   │    │ redis-2   │     │ redis-3   │
+    └───────────┘    └───────────┘     └───────────┘
 
-```
-                        ┌─────────────┐
-        clients ──────► │    nginx    │  (round-robin / least-conn LB)
-                        └──────┬──────┘
-                   ┌───────────┴───────────┐
-                   ▼                       ▼
-             ┌───────────┐           ┌───────────┐
-             │  app-1     │           │  app-2     │   ...  app-N
-             │ (node id 1)│           │ (node id 2)│
-             └─────┬──────┘           └─────┬──────┘
-                   │                        │
-                   └───────────┬────────────┘
-                                ▼
-                    consistent hash ring
-                    (150 virtual nodes / shard)
-                                │
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                 ▼
-        ┌───────────┐    ┌───────────┐     ┌───────────┐
-        │ redis-1   │    │ redis-2   │     │ redis-3   │
-        └───────────┘    └───────────┘     └───────────┘
-```
-
+    
 **Why consistent hashing, not `hash(key) % N`:** with modulo sharding,
 adding or removing a Redis node reshuffles almost the entire keyspace and
 invalidates nearly every cached entry at once. The ring only remaps
@@ -83,10 +81,10 @@ curl -X POST localhost:8080/api/v1/shorten -H "Content-Type: application/json" \
 mvn test
 ```
 
-Covers: consistent-hash routing stability and distribution, the
-minimal-remap property when shards are added/removed, Base62 round-trips,
-and Snowflake ID uniqueness/ordering (including across concurrent
-"nodes").
+11/11 tests passing. Covers: consistent-hash routing stability and
+distribution, the minimal-remap property when shards are added/removed,
+Base62 round-trips, and Snowflake ID uniqueness/ordering (including
+across concurrent "nodes").
 
 ## Load testing
 
@@ -160,16 +158,6 @@ in `.github/workflows/ci.yml`, which builds the stack in CI, runs both
 scripts, and uploads the output as a build artifact.
 
 ## Project layout
-
-```
-src/main/java/com/toshif/shorturl/
-├── hashing/     ConsistentHashRing, Base62, SnowflakeIdGenerator
-├── service/     RedisShardRouter, UrlShortenerService
-├── controller/  UrlShortenerController
-├── config/      ShardProperties, AppProperties, AppConfig
-├── dto/         ShortenRequest, ShortenResponse
-└── exception/   ShortCodeNotFoundException, GlobalExceptionHandler
-```
 
 ## Possible extensions
 
