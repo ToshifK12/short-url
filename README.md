@@ -118,6 +118,20 @@ full stack: 3 Redis shards + 2 app instances + nginx, all on localhost):
 | Read (`GET /{code}`) | `wrk -t4 -c100 -d20s` | 7,508.58 | 0 / 150,572 | 11.84ms | 58.19ms |
 | Read (`GET /{code}`) | `wrk -t8 -c300 -d20s` | **9,275.09** | 0 / 186,223 | 26.97ms | 89.09ms |
 
+**Independent confirmation from GitHub Actions CI** (shared, throttled
+2-vCPU runner — a deliberately weaker machine than a dedicated dev
+laptop, run automatically by the `load-test` job on every push):
+
+| Path | Requests/sec | Errors | p50 | p99 |
+|---|---|---|---|---|
+| Write (`POST /shorten`) | 1,691.73 | 0 / 33,900 | 105.14ms | 1007.87ms |
+| Read (`GET /{code}`) | 6,116.27 | 0 / 122,737 | 27.73ms | 183.32ms |
+
+Lower throughput than the dedicated-hardware numbers above, as expected
+on shared cloud CPU, but zero errors across both runs — confirming the
+stack behaves correctly under load on infrastructure nobody hand-tuned
+for the test.
+
 The read path (`GET /{code}`) is a single Redis `GET` behind Tomcat and
 scales further with more `wrk` threads/connections, since Redis itself
 comfortably handles 100k+ ops/sec in memory and the app layer just proxies
