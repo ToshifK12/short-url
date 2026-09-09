@@ -1,0 +1,15 @@
+shorturl:
+  node-id: ${NODE_ID:0}
+  base-url: ${BASE_URL:http://localhost:8080}
+  redis:
+    virtual-nodes-per-shard: 150
+    shards:
+      - host: redis-node-1
+        port: 6379
+        pool-size: 128
+      - host: redis-node-2
+        port: 6379
+        pool-size: 128
+      - host: redis-node-3
+        port: 6379
+        pool-size: 128

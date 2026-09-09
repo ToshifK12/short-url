@@ -1,0 +1,31 @@
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 400
+      min-spare: 40
+    accept-count: 500
+    max-connections: 10000
+
+spring:
+  application:
+    name: short-url
+
+shorturl:
+  node-id: ${NODE_ID:0}
+  base-url: ${BASE_URL:http://localhost:8080}
+  redis:
+    virtual-nodes-per-shard: 150
+    shards:
+      - host: ${REDIS_HOST:localhost}
+        port: ${REDIS_PORT:6379}
+        pool-size: 64
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: never
